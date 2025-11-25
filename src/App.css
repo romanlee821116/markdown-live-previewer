@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+.app-container {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}

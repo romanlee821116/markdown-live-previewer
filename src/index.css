@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* Markdown 內容樣式 */
+.markdown-content h1 {
+  @apply text-3xl font-bold my-1 pb-2;
+}
+
+.markdown-content h2 {
+  @apply text-2xl font-bold my-3 pb-2;
+}
+
+.markdown-content h3 {
+  @apply text-xl font-bold my-2;
+}
+
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  @apply font-bold my-2;
+}
+
+.markdown-content p {
+  @apply my-1;
+}
+
+.markdown-content ul {
+  @apply my-1 pl-8 list-disc;
+}
+
+.markdown-content ul ul {
+  list-style-type: circle;
+}
+
+.markdown-content ul ul ul {
+  list-style-type: square;
+}
+
+.markdown-content ol {
+  margin: 1em 0;
+  padding-left: 2rem;
+  list-style-type: decimal;
+}
+
+.markdown-content ol ol {
+  list-style-type: decimal;
+}
+
+.markdown-content li {
+  @apply my-2;
+}
+
+.markdown-content code {
+  @apply bg-gray-100 px-1.5 py-0.5 rounded font-mono text-sm;
+}
+
+.markdown-content pre {
+  @apply bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-1;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
+
+.markdown-content blockquote {
+  @apply border-l-4 border-blue-500 pl-4 my-1 text-gray-600 italic;
+}
+
+.markdown-content a {
+  @apply text-blue-600 underline;
+}
+
+.markdown-content a:hover {
+  @apply text-blue-800;
+}
+
+.markdown-content img {
+  @apply max-w-full h-auto my-1 rounded-lg;
+}
+
+.markdown-content hr {
+  @apply border-0 border-t-2 border-gray-200;
+}
+
+.markdown-content strong {
+  @apply font-bold;
+}
+
+.markdown-content em {
+  @apply italic;
+}
+
+.markdown-content del {
+  @apply line-through text-gray-600;
+}
+
+/* Toast 動畫 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
