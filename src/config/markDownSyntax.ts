@@ -28,7 +28,7 @@ _You **can** combine them_
     2. Item 3b
 ---
 ## Images
-![This is an alt text.](/assets/cat-demo.jpg "This is a sample image.")
+![This is an alt text.](https://truth.bahamut.com.tw/s01/202408/f41d1e4f6ed6766648e89ebeb22a3d3a.JPG)
 ---
 ## Links
 You may be using [Markdown Live Preview](https://markdownlivepreview.com/).

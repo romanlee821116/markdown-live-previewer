@@ -26,7 +26,15 @@ export const processInlineMarkdown = (text) => {
   // 處理圖片（支持可選的 title）
   result = result.replace(/!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]+)")?\)/g, (match, alt, src, title) => {
     const titleAttr = title ? ` title="${title}"` : '';
-    return `<img src="${src}" alt="${alt}"${titleAttr} class="max-w-full h-auto" />`;
+    // 處理圖片路徑：如果是絕對路徑（以 / 開頭）且不是完整 URL，需要加上 base path
+    let imageSrc = src;
+    if (src.startsWith('/') && !src.startsWith('//') && !src.match(/^https?:\/\//)) {
+      // 獲取 base URL（在 Vite 中，import.meta.env.BASE_URL 包含尾隨斜線）
+      const baseUrl = import.meta.env.BASE_URL;
+      // 移除 src 開頭的 /，然後加上 baseUrl
+      imageSrc = baseUrl + src.substring(1);
+    }
+    return `<img src="${imageSrc}" alt="${alt}"${titleAttr} class="max-w-full h-auto" />`;
   });
   
   return result;
