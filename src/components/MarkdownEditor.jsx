@@ -2,7 +2,54 @@ import { useRef, useState, useEffect } from 'react';
 
 function MarkdownEditor({ value, onChange, onScroll, previewRef, onLineChange, onCopy }) {
   const textareaRef = useRef(null);
+  const lineNumbersRef = useRef(null);
   const [cursorInfo, setCursorInfo] = useState({ line: 1, col: 1 });
+  const [totalLines, setTotalLines] = useState(1);
+  
+  // 計算實際行數
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    // 使用 split('\n') 計算邏輯行數（換行符分隔的行）
+    // 這是準確的方法，因為行號應該對應邏輯行，而不是視覺行（自動換行的行）
+    const lines = value.split('\n');
+    const logicalLines = value === '' ? 1 : lines.length;
+    
+    // 獲取實際的 line-height 和 padding
+    const computedStyle = window.getComputedStyle(textarea);
+    const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
+    const paddingTop = parseFloat(computedStyle.paddingTop) || 16;
+    const paddingBottom = parseFloat(computedStyle.paddingBottom) || 16;
+    const totalPadding = paddingTop + paddingBottom;
+    
+    // 計算 textarea 實際需要的行數（考慮內容高度）
+    const contentHeight = textarea.scrollHeight - totalPadding;
+    const visualLines = Math.max(1, Math.ceil(contentHeight / lineHeight));
+    
+    // 使用邏輯行數和視覺行數中的較大值，確保行號足夠
+    const actualLines = Math.max(logicalLines, visualLines);
+    
+    setTotalLines(actualLines);
+  }, [value]);
+  
+  // 同步行號滾動
+  const syncLineNumbersScroll = () => {
+    const textarea = textareaRef.current;
+    const lineNumbers = lineNumbersRef.current;
+    
+    if (!textarea || !lineNumbers) return;
+    
+    // 直接同步，確保即時響應
+    const textareaScrollTop = textarea.scrollTop;
+    
+    // 確保行號區域的滾動位置與 textarea 完全一致
+    if (Math.abs(lineNumbers.scrollTop - textareaScrollTop) > 0.5) {
+      lineNumbers.scrollTop = textareaScrollTop;
+    }
+  };
+  
+  // 更新游標位置
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -17,6 +64,11 @@ function MarkdownEditor({ value, onChange, onScroll, previewRef, onLineChange, o
       onLineChange(line);
     }
   }, [value, onLineChange]);
+
+  // 當內容變化時，確保行號區域的滾動位置同步
+  useEffect(() => {
+    syncLineNumbersScroll();
+  }, [value]);
 
   // 滾動同步
   const handleScroll = () => {
@@ -88,22 +140,11 @@ function MarkdownEditor({ value, onChange, onScroll, previewRef, onLineChange, o
     }
   };
 
-  const lineNumbersRef = useRef(null);
-
-  // 計算總行數
-  const totalLines = value.split('\n').length;
   const lineNumbers = Array.from({ length: totalLines }, (_, i) => i + 1);
 
-  // 同步行號滾動
-  const syncLineNumbersScroll = () => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  };
-
   const handleTextareaScroll = () => {
-    handleScroll();
     syncLineNumbersScroll();
+    handleScroll();
   };
 
   const handleCopy = async () => {
@@ -151,10 +192,12 @@ function MarkdownEditor({ value, onChange, onScroll, previewRef, onLineChange, o
         {/* 行號區域 */}
         <div 
           ref={lineNumbersRef}
-          className="line-numbers bg-gray-50 border-r border-gray-300 px-2 py-4 text-right text-xs text-gray-500 font-mono select-none overflow-y-auto"
+          className="line-numbers bg-gray-50 border-r border-gray-300 px-2 text-right text-xs text-gray-500 font-mono select-none overflow-y-auto"
           style={{ 
             minWidth: '3rem',
-            lineHeight: '1.5rem'
+            lineHeight: '1.5rem',
+            paddingTop: '1rem', // 與 textarea 的 padding-top 一致
+            paddingBottom: '1rem' // 與 textarea 的 padding-bottom 一致
           }}
         >
           {lineNumbers.map((num) => (

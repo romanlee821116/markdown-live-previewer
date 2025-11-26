@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import './App.css';
 import MarkdownEditor from './components/MarkdownEditor';
 import HtmlViewer from './components/HtmlViewer';
@@ -9,7 +9,7 @@ import { markdownToHtml } from './utils/markdownParser';
 
 function App() {
   const [markdown, setMarkdown] = useState(markDownSyntax);
-  const html = markdownToHtml(markdown);
+  const html = useMemo(() => markdownToHtml(markdown), [markdown]);
   const previewRef = useRef(null);
   const containerRef = useRef(null);
   const [leftWidth, setLeftWidth] = useState(50); // 百分比
