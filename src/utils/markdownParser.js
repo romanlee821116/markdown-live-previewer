@@ -1,4 +1,60 @@
 /**
+ * HTML 轉義函數（防止 XSS 攻擊）
+ */
+const escapeHtml = (text) => {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+};
+
+/**
+ * 過濾危險的 HTML 標籤和屬性（防止 XSS 攻擊）
+ */
+const sanitizeHtml = (text) => {
+  if (!text) return '';
+  
+  // 危險標籤列表
+  const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 
+                         'select', 'textarea', 'style', 'link', 'meta', 'base', 'frame', 
+                         'frameset', 'applet', 'svg', 'math'];
+  
+  // 危險屬性列表（事件處理器和其他危險屬性）
+  const dangerousAttrs = ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 
+                          'onblur', 'onchange', 'onsubmit', 'onreset', 'onselect',
+                          'javascript:', 'data:', 'vbscript:'];
+  
+  let result = text;
+  
+  // 轉義危險標籤
+  dangerousTags.forEach(tag => {
+    const regex = new RegExp(`<${tag}[^>]*>.*?</${tag}>`, 'gis');
+    result = result.replace(regex, (match) => escapeHtml(match));
+    // 也處理自閉合標籤
+    const selfClosingRegex = new RegExp(`<${tag}[^>]*/?>`, 'gi');
+    result = result.replace(selfClosingRegex, (match) => escapeHtml(match));
+  });
+  
+  // 轉義包含危險屬性的標籤
+  dangerousAttrs.forEach(attr => {
+    const regex = new RegExp(`<[^>]*\\s+${attr}[^>]*>`, 'gi');
+    result = result.replace(regex, (match) => escapeHtml(match));
+  });
+  
+  // 轉義 javascript: 和 data: URL
+  result = result.replace(/href\s*=\s*["']?javascript:/gi, (match) => escapeHtml(match));
+  result = result.replace(/src\s*=\s*["']?javascript:/gi, (match) => escapeHtml(match));
+  result = result.replace(/href\s*=\s*["']?data:/gi, (match) => escapeHtml(match));
+  result = result.replace(/src\s*=\s*["']?data:/gi, (match) => escapeHtml(match));
+  
+  return result;
+};
+
+/**
  * 處理行內 markdown 語法（粗體、斜體、連結等）
  */
 export const processInlineMarkdown = (text) => {
@@ -7,25 +63,59 @@ export const processInlineMarkdown = (text) => {
   let result = text;
   
   // 處理行內代碼（必須先處理，避免其他規則影響）
-  result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // 代碼內容需要轉義 HTML（但保留 Markdown 語法處理的可能性）
+  result = result.replace(/`([^`]+)`/g, (match, code) => {
+    return `<code>${escapeHtml(code)}</code>`;
+  });
   
   // 處理粗體和斜體（先處理粗斜體，再處理粗體，最後處理斜體）
-  result = result.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  result = result.replace(/___(.*?)___/g, '<strong><em>$1</em></strong>');
-  result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  result = result.replace(/__(.*?)__/g, '<strong>$1</strong>');
-  result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  result = result.replace(/_(.*?)_/g, '<em>$1</em>');
+  // 注意：不要轉義內容，因為可能包含其他 Markdown 語法
+  result = result.replace(/\*\*\*(.*?)\*\*\*/g, (match, content) => {
+    // 遞迴處理內容（可能包含其他語法）
+    const processedContent = processInlineMarkdown(content);
+    return `<strong><em>${processedContent}</em></strong>`;
+  });
+  result = result.replace(/___(.*?)___/g, (match, content) => {
+    const processedContent = processInlineMarkdown(content);
+    return `<strong><em>${processedContent}</em></strong>`;
+  });
+  result = result.replace(/\*\*(.*?)\*\*/g, (match, content) => {
+    const processedContent = processInlineMarkdown(content);
+    return `<strong>${processedContent}</strong>`;
+  });
+  result = result.replace(/__(.*?)__/g, (match, content) => {
+    const processedContent = processInlineMarkdown(content);
+    return `<strong>${processedContent}</strong>`;
+  });
+  result = result.replace(/\*(.*?)\*/g, (match, content) => {
+    const processedContent = processInlineMarkdown(content);
+    return `<em>${processedContent}</em>`;
+  });
+  result = result.replace(/_(.*?)_/g, (match, content) => {
+    const processedContent = processInlineMarkdown(content);
+    return `<em>${processedContent}</em>`;
+  });
   
   // 處理刪除線
-  result = result.replace(/~~(.*?)~~/g, '<del>$1</del>');
+  result = result.replace(/~~(.*?)~~/g, (match, content) => {
+    const processedContent = processInlineMarkdown(content);
+    return `<del>${processedContent}</del>`;
+  });
   
   // 處理連結
-  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+    // 轉義 URL（防止 javascript: 等）
+    const escapedUrl = escapeHtml(url);
+    // 處理連結文字（可能包含其他 Markdown 語法）
+    const processedText = processInlineMarkdown(linkText);
+    return `<a href="${escapedUrl}" target="_blank" rel="noopener noreferrer">${processedText}</a>`;
+  });
   
   // 處理圖片（支持可選的 title）
   result = result.replace(/!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]+)")?\)/g, (match, alt, src, title) => {
-    const titleAttr = title ? ` title="${title}"` : '';
+    // 轉義 alt 和 title
+    const escapedAlt = escapeHtml(alt || '');
+    const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
     // 處理圖片路徑：如果是絕對路徑（以 / 開頭）且不是完整 URL，需要加上 base path
     let imageSrc = src;
     if (src.startsWith('/') && !src.startsWith('//') && !src.match(/^https?:\/\//)) {
@@ -34,8 +124,13 @@ export const processInlineMarkdown = (text) => {
       // 移除 src 開頭的 /，然後加上 baseUrl
       imageSrc = baseUrl + src.substring(1);
     }
-    return `<img src="${imageSrc}" alt="${alt}"${titleAttr} class="max-w-full h-auto" />`;
+    // 轉義圖片 URL
+    const escapedSrc = escapeHtml(imageSrc);
+    return `<img src="${escapedSrc}" alt="${escapedAlt}"${titleAttr} class="max-w-full h-auto" />`;
   });
+  
+  // 最後過濾危險的 HTML 標籤和屬性
+  result = sanitizeHtml(result);
   
   return result;
 };
@@ -367,6 +462,23 @@ export const markdownToHtml = (md) => {
   
   // 將換行轉換為 <br>（但不在 pre 標籤內）
   html = html.replace(/\n/g, '<br />');
+  
+  // 最終安全檢查：轉義所有未允許的 HTML 標籤（防止 XSS 攻擊）
+  // 允許的標籤列表（我們生成的標籤）
+  const allowedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 
+                       'table', 'thead', 'tbody', 'tr', 'th', 'td', 'blockquote', 
+                       'pre', 'code', 'hr', 'br', 'strong', 'em', 'del', 'a', 'img'];
+  
+  // 轉義所有未允許的 HTML 標籤
+  html = html.replace(/<(\/?)([a-z][a-z0-9]*)([^>]*)>/gi, (match, closing, tagName) => {
+    const lowerTagName = tagName.toLowerCase();
+    // 如果是允許的標籤，保留
+    if (allowedTags.includes(lowerTagName)) {
+      return match;
+    }
+    // 否則轉義整個標籤
+    return escapeHtml(match);
+  });
   
   return html;
 };
